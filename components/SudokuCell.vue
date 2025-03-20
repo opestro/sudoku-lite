@@ -6,7 +6,7 @@
       'bg-blue-100': isHighlighted && !isSelected && !isSameNumber,
       'bg-green-200': isSameNumber && !isSelected,
       'bg-red-100': hasError,
-      'cursor-pointer hover:bg-gray-50': !isReadOnly,
+      'cursor-pointer hover:bg-orange-400 hover:text-white': !isReadOnly,
       'font-bold': isReadOnly,
       'text-blue-600': !isReadOnly && value && !isSelected && !isSameNumber,
       'font-semibold': isSameNumber || isSelected,
@@ -20,6 +20,9 @@
     @click="$emit('select', row, col)"
     @touchstart.passive="handleTouchStart"
     @touchend.prevent="$emit('select', row, col)"
+    tabindex="0"
+    @keydown="handleKeyDown"
+    :aria-label="`Sudoku cell row ${row + 1}, column ${col + 1}${value ? ', value ' + value : ''}`"
   >
     <span :class="{'animate-pulse': isSelected && value, 'font-bold': isSameNumber && !isSelected}">{{ value || '' }}</span>
     
@@ -40,33 +43,82 @@
   </div>
 </template>
 
-<script setup lang="ts">
-defineProps<{
-  row: number;
-  col: number;
-  value: number;
-  isReadOnly?: boolean;
-  isSelected?: boolean;
-  isHighlighted?: boolean;
-  isSameNumber?: boolean;
-  hasError?: boolean;
-  notes?: number[];
-}>();
+<script setup>
+const props = defineProps({
+  row: {
+    type: Number,
+    required: true
+  },
+  col: {
+    type: Number,
+    required: true
+  },
+  value: {
+    type: Number,
+    default: 0
+  },
+  isReadOnly: {
+    type: Boolean,
+    default: false
+  },
+  isSelected: {
+    type: Boolean,
+    default: false
+  },
+  isHighlighted: {
+    type: Boolean,
+    default: false
+  },
+  isSameNumber: {
+    type: Boolean,
+    default: false
+  },
+  hasError: {
+    type: Boolean,
+    default: false
+  },
+  notes: {
+    type: Array,
+    default: () => []
+  }
+});
 
-defineEmits<{
-  (e: 'select', row: number, col: number): void;
-}>();
+const emit = defineEmits(['select', 'update']);
 
 // Handle touch events better on mobile
-function handleTouchStart(event: TouchEvent) {
+function handleTouchStart(event) {
   // Add visual feedback for touch start
-  const target = event.currentTarget as HTMLElement;
+  const target = event.currentTarget;
   target.style.opacity = '0.7';
   
   // Set a timeout to restore normal appearance if touch does not complete
   setTimeout(() => {
     target.style.opacity = '1';
   }, 300);
+}
+
+// Handle keyboard events for PC users
+function handleKeyDown(event) {
+  // Skip if the cell is read-only
+  if (props.isReadOnly) return;
+  
+  // Handle number keys (both top row and numpad)
+  const keyNum = parseInt(event.key);
+  
+  if (!isNaN(keyNum) && keyNum >= 0 && keyNum <= 9) {
+    event.preventDefault();
+    if (keyNum === 0) {
+      // 0 or Delete will clear the cell
+      emit('update', 0);
+    } else {
+      // 1-9 will set the value
+      emit('update', keyNum);
+    }
+  } else if (event.key === 'Delete' || event.key === 'Backspace') {
+    // Delete or Backspace will clear the cell
+    event.preventDefault();
+    emit('update', 0);
+  }
 }
 </script>
 
@@ -82,5 +134,12 @@ function handleTouchStart(event: TouchEvent) {
   .sudoku-cell:active {
     background-color: rgba(59, 130, 246, 0.1);
   }
+}
+
+/* Add focus styles for keyboard navigation */
+.sudoku-cell:focus {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: -2px;
+  z-index: 1;
 }
 </style> 
