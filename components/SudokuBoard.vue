@@ -21,6 +21,7 @@
         :has-error="errors[Math.floor((i - 1) / 9)][(i - 1) % 9]"
         :notes="notes[Math.floor((i - 1) / 9)][(i - 1) % 9] || []"
         @select="selectCell(Math.floor((i - 1) / 9), (i - 1) % 9)"
+        @update="handleCellUpdate(Math.floor((i - 1) / 9), (i - 1) % 9, $event)"
       />
     </div>
     
@@ -53,7 +54,7 @@
         </svg>
       </button>
       
-      <!-- Notes toggle button -->
+      <!-- Notes toggle button - add keyboard hint -->
       <button
         :class="[
           'p-2 sm:p-3 text-base sm:text-xl font-bold rounded-md transition-all active:scale-95 col-span-2 sm:col-span-1 flex items-center justify-center',
@@ -68,6 +69,7 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
         <span class="text-xs sm:text-sm">{{ noteMode ? "ON" : "Notes" }}</span>
+        <span class="hidden sm:inline-block ml-1 text-[8px] opacity-75">(N)</span>
       </button>
     </div>
     
@@ -93,6 +95,28 @@
       class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-green-500 text-white px-4 py-2 rounded-md shadow-md animate-bounce z-10 text-sm sm:text-base"
     >
       All {{ numberCompleted }}s completed! 🎉
+    </div>
+    
+    <!-- Add keyboard instructions section -->
+    <div class="mt-4 bg-blue-50 p-3 rounded-md hidden sm:block">
+      <h3 class="text-sm font-semibold text-blue-800 mb-1">Keyboard Controls:</h3>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-700">
+        <div>
+          <span class="font-medium">Arrow keys:</span> Navigate cells
+        </div>
+        <div>
+          <span class="font-medium">Numbers (1-9):</span> Enter numbers
+        </div>
+        <div>
+          <span class="font-medium">0, Delete, Backspace:</span> Clear cell
+        </div>
+        <div>
+          <span class="font-medium">N key:</span> Toggle notes mode
+        </div>
+        <div>
+          <span class="font-medium">Home/End:</span> Move to start/end of row
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -135,7 +159,78 @@ onMounted(() => {
   // Create deep copies to avoid reference issues
   initialBoard.value = JSON.parse(JSON.stringify(props.initialPuzzle));
   board.value = JSON.parse(JSON.stringify(props.initialPuzzle));
+  
+  // Add keyboard event listeners for global navigation
+  window.addEventListener('keydown', handleGlobalKeyDown);
 });
+
+onBeforeUnmount(() => {
+  // Clean up event listeners
+  window.removeEventListener('keydown', handleGlobalKeyDown);
+});
+
+// Handle global keyboard events
+const handleGlobalKeyDown = (event: KeyboardEvent) => {
+  // If no cell is selected, skip keyboard handling
+  if (!selectedCell.value) return;
+  
+  const { row, col } = selectedCell.value;
+  
+  // Handle arrow keys for navigation
+  switch (event.key) {
+    case 'ArrowUp':
+      if (row > 0) {
+        event.preventDefault();
+        selectCell(row - 1, col);
+      }
+      break;
+    case 'ArrowDown':
+      if (row < 8) {
+        event.preventDefault();
+        selectCell(row + 1, col);
+      }
+      break;
+    case 'ArrowLeft':
+      if (col > 0) {
+        event.preventDefault();
+        selectCell(row, col - 1);
+      }
+      break;
+    case 'ArrowRight':
+      if (col < 8) {
+        event.preventDefault();
+        selectCell(row, col + 1);
+      }
+      break;
+    case 'Home':
+      event.preventDefault();
+      selectCell(row, 0); // Move to beginning of row
+      break;
+    case 'End':
+      event.preventDefault();
+      selectCell(row, 8); // Move to end of row
+      break;
+    case 'n':
+    case 'N':
+      // Toggle note mode with 'n' key
+      event.preventDefault();
+      toggleNoteMode();
+      break;
+    // Numbers are handled by the SudokuCell component
+  }
+  
+  // Handle number keys for input (both row and numpad)
+  const keyNum = parseInt(event.key);
+  if (!isNaN(keyNum) && keyNum >= 0 && keyNum <= 9) {
+    if (keyNum === 0) {
+      // 0 clears the cell
+      eraseCell();
+    } else {
+      // 1-9 inputs a number
+      inputNumber(keyNum);
+    }
+  }
+};
 
 // Watch for changes in the initialPuzzle and solution props
 watch(() => props.initialPuzzle, (newPuzzle) => {
@@ -494,6 +589,46 @@ const checkProgress = (): void => {
 // Helper to capitalize first letter
 const capitalizeFirst = (string: string): string => {
   return string.charAt(0).toUpperCase() + string.slice(1);
+};
+
+// Handle cell update event
+const handleCellUpdate = (row: number, col: number, value: number): void => {
+  // Update the board with the new value
+  board.value[row][col] = value;
+  
+  // Validate the move
+  const isValid = validateMove(row, col, value);
+  
+  // Update error state
+  if (!isValid) {
+    errorCount.value++;
+    errors[row][col] = true;
+  } else {
+    errorCount.value = Math.max(0, errorCount.value - 1);
+    errors[row][col] = false;
+  }
+  
+  // Emit error updates
+  if (!isValid) {
+    emit('error', errorCount.value);
+  }
+  
+  // Check if the puzzle is complete
+  if (isPuzzleComplete()) {
+    emit('complete', errorCount.value);
+  }
+  
+  // If this is a multiplayer game, update the game state
+  if (props.isMultiplayer && props.gameId && gameSync) {
+    gameSync.sendUpdate({
+      board: board.value,
+      notes: notes,
+      errors: errorCount.value
+    });
+  }
+  
+  // Emit the updated board
+  emit('update:board', board.value);
 };
 </script>
 
