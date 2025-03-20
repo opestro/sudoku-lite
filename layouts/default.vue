@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 flex flex-col">
-    <header class="bg-white shadow-md backdrop-blur-sm bg-opacity-90 sticky top-0 z-50">
+    <header class="bg-white  border-b border-gray-200 backdrop-blur-sm bg-opacity-90 sticky top-0 z-50">
       <div class="container mx-auto px-4 py-3 flex flex-wrap md:flex-nowrap items-center justify-between">
         <NuxtLink to="/" class="flex items-center space-x-2 font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
           <!-- Animated mini Sudoku grid logo -->
