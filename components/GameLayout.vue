@@ -25,7 +25,7 @@
         </div>
         
         <!-- Game Content -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden animate-fadeIn">
+        <div class="bg-white rounded-lg  overflow-hidden animate-fadeIn">
           <slot></slot>
         </div>
         
