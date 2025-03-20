@@ -1,26 +1,18 @@
 <template>
-  <div class="w-full max-w-lg mx-auto relative bg-white rounded-2xl ">
-    <!-- Game header with enhanced design -->
-    <div class="flex justify-between items-center mb-4 p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl  border border-indigo-100">
-      <NumberCounter :board="board" class="z-10" />
-      <div class="flex flex-col items-end">
-        <div class="text-xs sm:text-sm font-medium">
-          Difficulty: <span class="text-indigo-600 font-semibold">{{ capitalizeFirst(difficulty) }}</span>
-        </div>
-        <div v-if="errorCount > 0" class="text-xs sm:text-sm text-red-500 font-medium mt-1">
-          Errors: <span class="font-bold">{{ errorCount }}</span>
-        </div>
-      </div>
+  <div class="w-full max-w-md mx-auto relative">
+    <NumberCounter :board="board" />
+    <div class="flex justify-between mb-2 p-2 bg-gray-50 rounded-t-md">
+      <div class="text-xs sm:text-sm font-medium">Difficulty: <span class="text-blue-600 font-semibold">{{ capitalizeFirst(difficulty) }}</span></div>
+      <div v-if="errorCount > 0" class="text-xs sm:text-sm text-red-500 font-medium">Errors: {{ errorCount }}</div>
     </div>
     
-    <!-- Debug Toggle Button (only visible in development) -->
-    <!-- <button 
-      v-if="process.env.NODE_ENV === 'development'"
+    <!-- Debug Toggle Button -->
+    <button 
       @click="showDebugPanel = !showDebugPanel" 
-      class="absolute top-1 right-1 mt-2 mr-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded-md z-10"
+      class="absolute top-0 right-0 mt-2 mr-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded-md z-10"
     >
       {{ showDebugPanel ? 'Hide Debug' : 'Debug' }}
-    </button> -->
+    </button>
     
     <!-- Debug Panel -->
     <div v-if="showDebugPanel" class="mb-4 p-2 bg-gray-100 rounded-md text-xs border border-gray-300 overflow-auto max-h-48">
@@ -45,48 +37,41 @@
       <div><span class="font-medium">Shift Key:</span> {{ isShiftKeyPressed ? 'Pressed' : 'Not Pressed' }}</div>
     </div>
     
-    <!-- Game board container with enhanced styling -->
-    <div class="relative mb-6">
-      <!-- Backdrop design elements for visual interest -->
-      <div class="absolute -top-3 -left-3 w-20 h-20 bg-indigo-100 rounded-full opacity-50 blur-xl"></div>
-      <div class="absolute -bottom-3 -right-3 w-24 h-24 bg-purple-100 rounded-full opacity-50 blur-xl"></div>
-      
-      <!-- Responsive Sudoku Grid -->
-      <div 
-        class="grid grid-cols-9 bg-white border-2 border-indigo-800 aspect-square  relative z-10 rounded-lg overflow-hidden transform transition-all duration-500"
-        :class="{ 'ring-4 ring-yellow-300 ring-offset-2': noteMode }"
-      >
-        <SudokuCell
-          v-for="i in 81"
-          :key="i"
-          :row="Math.floor((i - 1) / 9)"
-          :col="(i - 1) % 9"
-          :value="board[Math.floor((i - 1) / 9)][(i - 1) % 9]"
-          :is-read-only="initialBoard[Math.floor((i - 1) / 9)][(i - 1) % 9] !== 0"
-          :is-selected="selectedCell && selectedCell.row === Math.floor((i - 1) / 9) && selectedCell.col === (i - 1) % 9"
-          :is-multi-selected="isMultiSelected(Math.floor((i - 1) / 9), (i - 1) % 9)"
-          :is-highlighted="isHighlighted(Math.floor((i - 1) / 9), (i - 1) % 9)"
-          :is-same-number="isSameNumber(Math.floor((i - 1) / 9), (i - 1) % 9)"
-          :has-error="errors[Math.floor((i - 1) / 9)][(i - 1) % 9]"
-          :is-note-mode-active="noteMode"
-          :notes="notes[Math.floor((i - 1) / 9)][(i - 1) % 9] || []"
-          @select="selectCell(Math.floor((i - 1) / 9), (i - 1) % 9)"
-          @update="handleCellUpdate(Math.floor((i - 1) / 9), (i - 1) % 9, $event)"
-        />
-      </div>
+    <!-- Responsive Sudoku Grid -->
+    <div 
+      class="grid grid-cols-9 bg-white border-2 border-slate-800 aspect-square shadow-md" 
+      :class="{ 'ring-4 ring-yellow-300 ring-offset-2': noteMode }"
+    >
+      <SudokuCell
+        v-for="i in 81"
+        :key="i"
+        :row="Math.floor((i - 1) / 9)"
+        :col="(i - 1) % 9"
+        :value="board[Math.floor((i - 1) / 9)][(i - 1) % 9]"
+        :is-read-only="initialBoard[Math.floor((i - 1) / 9)][(i - 1) % 9] !== 0"
+        :is-selected="selectedCell && selectedCell.row === Math.floor((i - 1) / 9) && selectedCell.col === (i - 1) % 9"
+        :is-multi-selected="isMultiSelected(Math.floor((i - 1) / 9), (i - 1) % 9)"
+        :is-highlighted="isHighlighted(Math.floor((i - 1) / 9), (i - 1) % 9)"
+        :is-same-number="isSameNumber(Math.floor((i - 1) / 9), (i - 1) % 9)"
+        :has-error="errors[Math.floor((i - 1) / 9)][(i - 1) % 9]"
+        :is-note-mode-active="noteMode"
+        :notes="notes[Math.floor((i - 1) / 9)][(i - 1) % 9] || []"
+        @select="selectCell(Math.floor((i - 1) / 9), (i - 1) % 9)"
+        @update="handleCellUpdate(Math.floor((i - 1) / 9), (i - 1) % 9, $event)"
+      />
     </div>
     
-    <!-- Number pad with enhanced mobile-friendly design -->
-    <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 mt-4 mb-6 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-xl border border-indigo-100">
-      <!-- Numbers 1-9 with responsive sizing and enhanced design -->
+    <!-- Number pad section replacement with better mobile layout -->
+    <div class="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-2 mt-3 sm:mt-4 mb-4 sm:mb-6">
+      <!-- Numbers 1-9 with responsive sizing -->
       <button
         v-for="n in 9"
         :key="n"
         :class="[
-          'p-3 sm:p-4 text-lg sm:text-xl font-bold rounded-lg transition-all active:scale-95 shadow-sm',
+          'p-2 sm:p-3 text-base sm:text-xl font-bold rounded-md transition-all active:scale-95',
           selectedNumber === n 
-            ? 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md' 
-            : 'bg-white text-indigo-700 hover:bg-indigo-100 hover:shadow'
+            ? 'bg-blue-500 text-white shadow-md' 
+            : 'bg-gray-100 text-gray-800 hover:bg-blue-100'
         ]"
         @click="inputNumber(n)"
         :aria-label="`Input number ${n}`"
@@ -94,29 +79,29 @@
         {{ n }}
       </button>
       
-      <!-- Erase button -->
+      <!-- Erase button - full width on mobile -->
       <button
-        class="p-3 sm:p-4 text-lg sm:text-xl font-bold bg-white text-red-600 hover:bg-red-50 rounded-lg shadow-sm hover:shadow transition-all active:scale-95 flex items-center justify-center"
+        class="p-2 sm:p-3 text-base sm:text-xl font-bold bg-red-100 text-red-600 rounded-md hover:bg-red-200 transition-all active:scale-95 col-span-1 flex items-center justify-center"
         @click="eraseCell"
         aria-label="Erase cell"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
       
-      <!-- Notes toggle button -->
+      <!-- Notes toggle button - improve visibility when active -->
       <button
         :class="[
-          'p-3 sm:p-4 text-base sm:text-lg font-bold rounded-lg transition-all active:scale-95 col-span-2 sm:col-span-1 flex items-center justify-center shadow-sm',
+          'p-2 sm:p-3 text-base sm:text-xl font-bold rounded-md transition-all active:scale-95 col-span-2 sm:col-span-1 flex items-center justify-center',
           noteMode 
-            ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-white shadow-md ring-2 ring-yellow-300 ring-offset-1' 
-            : 'bg-white text-yellow-600 hover:bg-yellow-50 hover:shadow'
+            ? 'bg-yellow-500 text-white shadow-md ring-2 ring-yellow-300 ring-offset-1' 
+            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
         ]"
         @click="toggleNoteMode"
         aria-label="Toggle notes mode"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
         <span class="text-xs sm:text-sm">{{ noteMode ? "NOTES ON" : "Notes" }}</span>
@@ -125,77 +110,58 @@
     </div>
     
     <!-- Multi-selection hint - show only when notes mode is active -->
-    <div v-if="noteMode" 
-      class="mb-5 text-sm text-center bg-gradient-to-r from-yellow-50 to-amber-50 py-3 px-4 rounded-xl border border-yellow-200 shadow-sm">
+    <div v-if="noteMode" class="mb-4 text-xs text-center bg-blue-50 py-2 rounded-md">
       <span class="font-medium">Shift+Click</span> to select multiple cells for notes
     </div>
     
-    <!-- Game controls with enhanced design -->
-    <div class="flex justify-between mb-6">
+    <!-- Game controls -->
+    <div class="flex justify-between mb-4">
       <button 
-        class="px-5 py-3 text-sm sm:text-base bg-white text-gray-700 rounded-lg hover:bg-gray-100 transition shadow-sm hover:shadow font-medium border border-gray-200"
+        class="px-3 py-2 text-sm sm:text-base bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
         @click="resetBoard"
       >
-        <span class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Reset
-        </span>
+        Reset
       </button>
       <button 
-        class="px-5 py-3 text-sm sm:text-base bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg hover:shadow-md transition shadow-sm font-medium transform hover:translate-y-[-1px]"
+        class="px-3 py-2 text-sm sm:text-base bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
         @click="checkProgress"
       >
-        <span class="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Check Progress
-        </span>
+        Check Progress
       </button>
     </div>
     
-    <!-- Number completed notification with enhanced animation -->
+    <!-- Number completed notification -->
     <div 
       v-if="numberCompleted"
-      class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-6 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg animate-float z-10 text-sm sm:text-base font-medium"
+      class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-green-500 text-white px-4 py-2 rounded-md shadow-md animate-bounce z-10 text-sm sm:text-base"
     >
       All {{ numberCompleted }}s completed! 🎉
     </div>
     
-    <!-- Keyboard instructions with better design -->
-    <div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl shadow-inner border border-blue-100 hidden sm:block">
-      <h3 class="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Keyboard & Mouse Controls:
-      </h3>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-indigo-700">
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">↑↓←→</span>
-          <span>Navigate cells</span>
+    <!-- Add keyboard instructions section -->
+    <div class="mt-4 bg-blue-50 p-3 rounded-md hidden sm:block">
+      <h3 class="text-sm font-semibold text-blue-800 mb-1">Keyboard & Mouse Controls:</h3>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-700">
+        <div>
+          <span class="font-medium">Arrow keys:</span> Navigate cells
         </div>
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">1-9</span>
-          <span>Enter numbers</span>
+        <div>
+          <span class="font-medium">Numbers (1-9):</span> Enter numbers
         </div>
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">0, Del</span>
-          <span>Clear cell</span>
+        <div>
+          <span class="font-medium">0, Delete, Backspace:</span> Clear cell
         </div>
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">N</span>
-          <span>Toggle notes mode</span>
+        <div>
+          <span class="font-medium">N key:</span> Toggle notes mode
         </div>
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">Home/End</span>
-          <span>Start/end of row</span>
+        <div>
+          <span class="font-medium">Home/End:</span> Move to start/end of row
         </div>
-        <div class="flex items-center">
-          <span class="bg-white px-1.5 py-0.5 rounded text-indigo-600 font-mono mr-2 text-[10px] border border-indigo-100">Shift+Click</span>
-          <span>Multi-select for notes</span>
+        <div>
+          <span class="font-medium">Shift+Click:</span> Select multiple cells for notes
+        </div>
+        <div>
+          <span class="font-medium">Numpad:</span> Works for both numbers & notes
         </div>
       </div>
     </div>
@@ -241,11 +207,8 @@ const selectedCells = ref<CellPosition[]>([]);
 // Add shift key tracking for multi-selection
 const isShiftKeyPressed = ref(false);
 
-// Debug panel state
+// Add showDebugPanel reactive variable
 const showDebugPanel = ref(false);
-
-// For environment detection
-const process = { env: { NODE_ENV: 'development' } };
 
 // Initialize the board when component is mounted
 onMounted(() => {
