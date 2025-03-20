@@ -1,21 +1,21 @@
 <template>
   <div 
-    class="sudoku-cell relative flex items-center justify-center border-gray-300 text-base md:text-xl font-medium transition-colors"
+    class="sudoku-cell relative flex items-center justify-center border-gray-300 text-base md:text-xl font-medium transition-all duration-200"
     :class="{
-      'bg-blue-500 text-white': isSelected,
-      'bg-blue-300': isMultiSelected && !isSelected,
-      'bg-blue-100': isHighlighted && !isSelected && !isSameNumber && !isMultiSelected,
-      'bg-green-200': isSameNumber && !isSelected && !isMultiSelected,
-      'bg-red-100': hasError,
-      'cursor-pointer hover:bg-orange-400 hover:text-white': !isReadOnly,
+      'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-inner': isSelected,
+      'bg-gradient-to-br from-indigo-300 to-indigo-400 text-white': isMultiSelected && !isSelected,
+      'bg-indigo-50': isHighlighted && !isSelected && !isSameNumber && !isMultiSelected,
+      'bg-gradient-to-br from-green-100 to-emerald-100': isSameNumber && !isSelected && !isMultiSelected,
+      'bg-red-100 border-red-300': hasError,
+      'cursor-pointer hover:bg-gradient-to-br hover:from-purple-400 hover:to-indigo-400 hover:text-white hover:shadow-inner transform hover:scale-[1.02]': !isReadOnly,
       'font-bold': isReadOnly,
-      'text-blue-600': !isReadOnly && value && !isSelected && !isSameNumber && !isMultiSelected,
+      'text-indigo-700': !isReadOnly && value && !isSelected && !isSameNumber && !isMultiSelected,
       'font-semibold': isSameNumber || isSelected || isMultiSelected,
       'border-r border-b': true,
-      'border-r-2 border-r-slate-800': (col + 1) % 3 === 0 && col < 8,
-      'border-b-2 border-b-slate-800': (row + 1) % 3 === 0 && row < 8,
-      'border-l-2 border-l-slate-800': col === 0,
-      'border-t-2 border-t-slate-800': row === 0,
+      'border-r-2 border-r-indigo-800': (col + 1) % 3 === 0 && col < 8,
+      'border-b-2 border-b-indigo-800': (row + 1) % 3 === 0 && row < 8,
+      'border-l-2 border-l-indigo-800': col === 0,
+      'border-t-2 border-t-indigo-800': row === 0,
       'read-only': isReadOnly
     }"
     @click="handleClick"
@@ -35,17 +35,17 @@
         class="flex items-center justify-center text-[6px] md:text-[8px]"
         :class="{
           'text-gray-400': !notes.includes(n),
-          'text-blue-600 font-bold': notes.includes(n)
+          'text-indigo-600 font-bold': notes.includes(n)
         }"
       >
         {{ notes.includes(n) ? n : '' }}
       </div>
     </div>
     
-    <!-- Note mode indicator - small dot in the corner -->
+    <!-- Note mode indicator - enhanced yellow glow in the corner -->
     <div 
       v-if="isNoteModeActive && !isReadOnly && !value" 
-      class="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-yellow-400"
+      class="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 rounded-full bg-gradient-to-br from-yellow-300 to-yellow-500 shadow-yellow-100 shadow-sm"
       aria-hidden="true"
     ></div>
   </div>
@@ -101,7 +101,7 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'update']);
 
-// New click handler for better debugging
+// Click handler
 function handleClick(event) {
   console.log('🖱️ Cell clicked:', { row: props.row, col: props.col, value: props.value });
   console.log('  Cell state:', { 
@@ -114,27 +114,35 @@ function handleClick(event) {
   emit('select', props.row, props.col);
 }
 
-// Handle touch events better on mobile
+// Handle touch events for mobile
 function handleTouchStart(event) {
   console.log('👆 Touch start on cell:', { row: props.row, col: props.col });
   
   // Add visual feedback for touch start
   const target = event.currentTarget;
   target.style.opacity = '0.7';
+  target.style.transform = 'scale(0.97)';
   
   // Set a timeout to restore normal appearance if touch does not complete
   setTimeout(() => {
     target.style.opacity = '1';
+    target.style.transform = '';
   }, 300);
 }
 
-// Add touch end handler for debugging
+// Touch end handler
 function handleTouchEnd(event) {
   console.log('👆 Touch end on cell:', { row: props.row, col: props.col });
+  
+  // Reset visual feedback
+  const target = event.currentTarget;
+  target.style.opacity = '1';
+  target.style.transform = '';
+  
   emit('select', props.row, props.col);
 }
 
-// Handle keyboard events for PC users
+// Handle keyboard events
 function handleKeyDown(event) {
   console.log('⌨️ Keyboard event on cell:', { 
     row: props.row, 
@@ -197,14 +205,21 @@ function handleKeyDown(event) {
 /* Add a subtle touch feedback effect for mobile */
 @media (hover: none) {
   .sudoku-cell:active {
-    background-color: rgba(59, 130, 246, 0.1);
+    background-color: rgba(79, 70, 229, 0.2); /* indigo-600 with opacity */
+    transform: scale(0.97);
   }
 }
 
 /* Add focus styles for keyboard navigation */
 .sudoku-cell:focus {
-  outline: 2px solid var(--color-blue-500);
+  outline: 2px solid rgb(99, 102, 241); /* indigo-500 */
   outline-offset: -2px;
   z-index: 1;
+}
+
+/* Animation for read-only cells */
+.read-only {
+  background-image: linear-gradient(135deg, rgba(224, 231, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(224, 231, 255, 0.2) 50%, rgba(224, 231, 255, 0.2) 75%, transparent 75%, transparent);
+  background-size: 16px 16px;
 }
 </style> 
