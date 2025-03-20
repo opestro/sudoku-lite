@@ -7,7 +7,10 @@
     </div>
     
     <!-- Responsive Sudoku Grid -->
-    <div class="grid grid-cols-9 bg-white border-2 border-slate-800 aspect-square shadow-md">
+    <div 
+      class="grid grid-cols-9 bg-white border-2 border-slate-800 aspect-square shadow-md" 
+      :class="{ 'ring-4 ring-yellow-300 ring-offset-2': noteMode }"
+    >
       <SudokuCell
         v-for="i in 81"
         :key="i"
@@ -16,9 +19,11 @@
         :value="board[Math.floor((i - 1) / 9)][(i - 1) % 9]"
         :is-read-only="initialBoard[Math.floor((i - 1) / 9)][(i - 1) % 9] !== 0"
         :is-selected="selectedCell && selectedCell.row === Math.floor((i - 1) / 9) && selectedCell.col === (i - 1) % 9"
+        :is-multi-selected="isMultiSelected(Math.floor((i - 1) / 9), (i - 1) % 9)"
         :is-highlighted="isHighlighted(Math.floor((i - 1) / 9), (i - 1) % 9)"
         :is-same-number="isSameNumber(Math.floor((i - 1) / 9), (i - 1) % 9)"
         :has-error="errors[Math.floor((i - 1) / 9)][(i - 1) % 9]"
+        :is-note-mode-active="noteMode"
         :notes="notes[Math.floor((i - 1) / 9)][(i - 1) % 9] || []"
         @select="selectCell(Math.floor((i - 1) / 9), (i - 1) % 9)"
         @update="handleCellUpdate(Math.floor((i - 1) / 9), (i - 1) % 9, $event)"
@@ -54,12 +59,12 @@
         </svg>
       </button>
       
-      <!-- Notes toggle button - add keyboard hint -->
+      <!-- Notes toggle button - improve visibility when active -->
       <button
         :class="[
           'p-2 sm:p-3 text-base sm:text-xl font-bold rounded-md transition-all active:scale-95 col-span-2 sm:col-span-1 flex items-center justify-center',
           noteMode 
-            ? 'bg-yellow-400 text-white shadow-md' 
+            ? 'bg-yellow-500 text-white shadow-md ring-2 ring-yellow-300 ring-offset-1' 
             : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
         ]"
         @click="toggleNoteMode"
@@ -68,9 +73,14 @@
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-5 sm:w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
-        <span class="text-xs sm:text-sm">{{ noteMode ? "ON" : "Notes" }}</span>
+        <span class="text-xs sm:text-sm">{{ noteMode ? "NOTES ON" : "Notes" }}</span>
         <span class="hidden sm:inline-block ml-1 text-[8px] opacity-75">(N)</span>
       </button>
+    </div>
+    
+    <!-- Multi-selection hint - show only when notes mode is active -->
+    <div v-if="noteMode" class="mb-4 text-xs text-center bg-blue-50 py-2 rounded-md">
+      <span class="font-medium">Shift+Click</span> to select multiple cells for notes
     </div>
     
     <!-- Game controls -->
@@ -99,7 +109,7 @@
     
     <!-- Add keyboard instructions section -->
     <div class="mt-4 bg-blue-50 p-3 rounded-md hidden sm:block">
-      <h3 class="text-sm font-semibold text-blue-800 mb-1">Keyboard Controls:</h3>
+      <h3 class="text-sm font-semibold text-blue-800 mb-1">Keyboard & Mouse Controls:</h3>
       <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-blue-700">
         <div>
           <span class="font-medium">Arrow keys:</span> Navigate cells
@@ -115,6 +125,12 @@
         </div>
         <div>
           <span class="font-medium">Home/End:</span> Move to start/end of row
+        </div>
+        <div>
+          <span class="font-medium">Shift+Click:</span> Select multiple cells for notes
+        </div>
+        <div>
+          <span class="font-medium">Numpad:</span> Works for both numbers & notes
         </div>
       </div>
     </div>
@@ -154,6 +170,12 @@ const errorCount = ref(0);
 const { pb } = usePocketbase();
 const numberCompleted = ref<number | null>(null);
 
+// Add multi-cell selection support
+const selectedCells = ref<CellPosition[]>([]);
+
+// Add shift key tracking for multi-selection
+const isShiftKeyPressed = ref(false);
+
 // Initialize the board when component is mounted
 onMounted(() => {
   // Create deep copies to avoid reference issues
@@ -162,11 +184,30 @@ onMounted(() => {
   
   // Add keyboard event listeners for global navigation
   window.addEventListener('keydown', handleGlobalKeyDown);
+  
+  // Track shift key for multi-selection
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') {
+      isShiftKeyPressed.value = true;
+    }
+  });
+  
+  window.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') {
+      isShiftKeyPressed.value = false;
+    }
+  });
 });
 
 onBeforeUnmount(() => {
   // Clean up event listeners
   window.removeEventListener('keydown', handleGlobalKeyDown);
+  window.removeEventListener('keydown', (e) => {
+    if (e.key === 'Shift') isShiftKeyPressed.value = true;
+  });
+  window.removeEventListener('keyup', (e) => {
+    if (e.key === 'Shift') isShiftKeyPressed.value = false;
+  });
 });
 
 // Handle global keyboard events
@@ -221,7 +262,15 @@ const handleGlobalKeyDown = (event: KeyboardEvent) => {
   
   // Handle number keys for input (both row and numpad)
   const keyNum = parseInt(event.key);
+  const isNumpad = event.code && event.code.startsWith('Numpad');
+  
   if (!isNaN(keyNum) && keyNum >= 0 && keyNum <= 9) {
+    // For numpad input specifically, we need to ensure the event is prevented
+    // to make sure it doesn't bubble up and cause issues
+    if (isNumpad) {
+      event.preventDefault();
+    }
+    
     if (keyNum === 0) {
       // 0 clears the cell
       eraseCell();
@@ -229,6 +278,8 @@ const handleGlobalKeyDown = (event: KeyboardEvent) => {
       // 1-9 inputs a number
       inputNumber(keyNum);
     }
+  } else if (event.key === 'Delete' || event.key === 'Backspace') {
+    eraseCell();
   }
 };
 
@@ -299,20 +350,95 @@ const isSameNumber = (row: number, col: number): boolean => {
 
 // Select a cell
 const selectCell = (row: number, col: number): void => {
-  // Update selected cell
-  selectedCell.value = { row, col };
+  // If the cell is read-only, don't select it for multi-selection
+  const isCellReadOnly = initialBoard.value[row][col] !== 0;
   
-  // Update selected number if the cell has a value
-  const cellValue = board.value[row][col];
-  if (cellValue !== 0) {
-    selectedNumber.value = cellValue;
+  if (isShiftKeyPressed.value && !isCellReadOnly) {
+    // When shift is pressed, add to selection for notes mode
+    const cellPos = { row, col };
+    
+    // Check if cell is already selected
+    const existingIndex = selectedCells.value.findIndex(
+      cell => cell.row === row && cell.col === col
+    );
+    
+    if (existingIndex === -1) {
+      // Add to multi-selection
+      selectedCells.value.push(cellPos);
+    } else {
+      // Remove from multi-selection
+      selectedCells.value.splice(existingIndex, 1);
+    }
+    
+    // Set the last selected cell as the current selected cell
+    if (selectedCells.value.length > 0) {
+      selectedCell.value = cellPos;
+    } else {
+      selectedCell.value = null;
+    }
+  } else {
+    // Only clear multi-selection if we're not in note mode or we're clicking on a different cell
+    if (!noteMode.value || !selectedCell.value || selectedCell.value.row !== row || selectedCell.value.col !== col) {
+      selectedCells.value = [];
+      
+      // If in note mode and clicking an empty cell, add it to the multi-selection
+      if (noteMode.value && !isCellReadOnly && board.value[row][col] === 0) {
+        selectedCells.value.push({ row, col });
+      }
+    }
+    
+    // Normal selection behavior
+    selectedCell.value = { row, col };
+    
+    // Update selected number if the cell has a value
+    const cellValue = board.value[row][col];
+    if (cellValue !== 0) {
+      selectedNumber.value = cellValue;
+    }
   }
 };
 
 // Input a number to the selected cell
 const inputNumber = (num: number): void => {
-  // Always update the selected number
-  selectedNumber.value = num;
+  // Only update selectedNumber in normal mode (not in note mode)
+  // This prevents highlighting of numbers used in notes
+  if (!noteMode.value) {
+    selectedNumber.value = num;
+  }
+  
+  // Handle notes for multi-selection
+  if (noteMode.value && selectedCells.value.length > 0) {
+    // Apply notes to all selected cells when in note mode
+    selectedCells.value.forEach(cellPos => {
+      const { row, col } = cellPos;
+      
+      // Skip read-only cells
+      if (initialBoard.value[row][col] !== 0) return;
+      
+      // Skip cells that already have values
+      if (board.value[row][col] !== 0) return;
+      
+      // Toggle note
+      const noteIndex = notes[row][col].indexOf(num);
+      if (noteIndex === -1) {
+        notes[row][col].push(num);
+        notes[row][col].sort((a, b) => a - b); // Keep notes ordered
+      } else {
+        notes[row][col].splice(noteIndex, 1);
+      }
+    });
+    
+    // If this is a multiplayer game, update the game state
+    if (props.isMultiplayer && props.gameId && gameSync) {
+      gameSync.sendUpdate({
+        board: board.value,
+        notes: notes,
+        errors: errorCount.value
+      });
+    }
+    
+    return;
+  }
   
   if (!selectedCell.value) return;
   
@@ -321,8 +447,12 @@ const inputNumber = (num: number): void => {
   // If the cell is read-only, do nothing
   if (initialBoard.value[row][col] !== 0) return;
   
-  // If note mode is on, toggle the note
+  // If note mode is on and only one cell is selected, toggle note in that cell
   if (noteMode.value) {
+    // Skip if the cell already has a value
+    if (board.value[row][col] !== 0) return;
+    
+    // Toggle note
     const noteIndex = notes[row][col].indexOf(num);
     if (noteIndex === -1) {
       notes[row][col].push(num);
@@ -330,17 +460,29 @@ const inputNumber = (num: number): void => {
     } else {
       notes[row][col].splice(noteIndex, 1);
     }
+    
+    // If this is a multiplayer game, update the game state
+    if (props.isMultiplayer && props.gameId && gameSync) {
+      gameSync.sendUpdate({
+        board: board.value,
+        notes: notes,
+        errors: errorCount.value
+      });
+    }
+    
     return;
   }
   
-  // Clear any notes for this cell
-  notes[row][col] = [];
+  // If we get here, we're in normal mode
   
   // Check if we're replacing a number that was previously marked as an error
   const wasError = errors[row][col];
   
   // Input the number
   board.value[row][col] = num;
+  
+  // Clear any notes for this cell
+  notes[row][col] = [];
   
   // Validate the move
   const isValid = validateMove(row, col, num);
@@ -593,6 +735,61 @@ const capitalizeFirst = (string: string): string => {
 
 // Handle cell update event
 const handleCellUpdate = (row: number, col: number, value: number): void => {
+  // Skip if the cell is read-only
+  if (initialBoard.value[row][col] !== 0) return;
+  
+  // If we're clearing the cell (value = 0), just do it
+  if (value === 0) {
+    // Clear cell and any notes
+    board.value[row][col] = 0;
+    notes[row][col] = [];
+    errors[row][col] = false;
+    
+    // Emit the updated board
+    emit('update:board', board.value);
+    return;
+  }
+  
+  // If in note mode, handle note toggle
+  if (noteMode.value) {
+    // Skip if cell already has a value
+    if (board.value[row][col] !== 0) return;
+    
+    // If the cell is not in the selectedCells array and it's a valid cell for notes,
+    // make sure to add it so it's visually selected
+    const isAlreadySelected = selectedCells.value.some(cell => cell.row === row && cell.col === col);
+    if (!isAlreadySelected) {
+      selectedCells.value.push({ row, col });
+    }
+    
+    // Toggle note
+    const noteIndex = notes[row][col].indexOf(value);
+    if (noteIndex === -1) {
+      notes[row][col].push(value);
+      notes[row][col].sort((a, b) => a - b); // Keep notes ordered
+    } else {
+      notes[row][col].splice(noteIndex, 1);
+    }
+    
+    // If this is a multiplayer game, update the game state
+    if (props.isMultiplayer && props.gameId && gameSync) {
+      gameSync.sendUpdate({
+        board: board.value,
+        notes: notes,
+        errors: errorCount.value
+      });
+    }
+    
+    return;
+  }
+  
+  // If we get here, we're in normal mode and inputting a number
+  // Update the selected number for normal mode
+  selectedNumber.value = value;
+  
+  // Clear any notes for this cell
+  notes[row][col] = [];
+  
   // Update the board with the new value
   board.value[row][col] = value;
   
@@ -629,6 +826,11 @@ const handleCellUpdate = (row: number, col: number, value: number): void => {
   
   // Emit the updated board
   emit('update:board', board.value);
+};
+
+// Function to check if a cell is part of the multi-selection
+const isMultiSelected = (row: number, col: number): boolean => {
+  return selectedCells.value.some(cell => cell.row === row && cell.col === col);
 };
 </script>
 

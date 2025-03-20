@@ -3,13 +3,14 @@
     class="sudoku-cell relative flex items-center justify-center border-gray-300 text-base md:text-xl font-medium transition-colors"
     :class="{
       'bg-blue-500 text-white': isSelected,
-      'bg-blue-100': isHighlighted && !isSelected && !isSameNumber,
-      'bg-green-200': isSameNumber && !isSelected,
+      'bg-blue-300': isMultiSelected && !isSelected,
+      'bg-blue-100': isHighlighted && !isSelected && !isSameNumber && !isMultiSelected,
+      'bg-green-200': isSameNumber && !isSelected && !isMultiSelected,
       'bg-red-100': hasError,
       'cursor-pointer hover:bg-orange-400 hover:text-white': !isReadOnly,
       'font-bold': isReadOnly,
-      'text-blue-600': !isReadOnly && value && !isSelected && !isSameNumber,
-      'font-semibold': isSameNumber || isSelected,
+      'text-blue-600': !isReadOnly && value && !isSelected && !isSameNumber && !isMultiSelected,
+      'font-semibold': isSameNumber || isSelected || isMultiSelected,
       'border-r border-b': true,
       'border-r-2 border-r-slate-800': (col + 1) % 3 === 0 && col < 8,
       'border-b-2 border-b-slate-800': (row + 1) % 3 === 0 && row < 8,
@@ -40,6 +41,13 @@
         {{ notes.includes(n) ? n : '' }}
       </div>
     </div>
+    
+    <!-- Note mode indicator - small dot in the corner -->
+    <div 
+      v-if="isNoteModeActive && !isReadOnly && !value" 
+      class="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full bg-yellow-400"
+      aria-hidden="true"
+    ></div>
   </div>
 </template>
 
@@ -65,6 +73,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  isMultiSelected: {
+    type: Boolean,
+    default: false
+  },
   isHighlighted: {
     type: Boolean,
     default: false
@@ -74,6 +86,10 @@ const props = defineProps({
     default: false
   },
   hasError: {
+    type: Boolean,
+    default: false
+  },
+  isNoteModeActive: {
     type: Boolean,
     default: false
   },
@@ -104,6 +120,7 @@ function handleKeyDown(event) {
   
   // Handle number keys (both top row and numpad)
   const keyNum = parseInt(event.key);
+  const isNumpad = event.code && event.code.startsWith('Numpad');
   
   if (!isNaN(keyNum) && keyNum >= 0 && keyNum <= 9) {
     event.preventDefault();
@@ -111,7 +128,7 @@ function handleKeyDown(event) {
       // 0 or Delete will clear the cell
       emit('update', 0);
     } else {
-      // 1-9 will set the value
+      // 1-9 will set the value (pass note mode information along)
       emit('update', keyNum);
     }
   } else if (event.key === 'Delete' || event.key === 'Backspace') {
