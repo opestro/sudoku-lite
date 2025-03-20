@@ -18,9 +18,9 @@
       'border-t-2 border-t-slate-800': row === 0,
       'read-only': isReadOnly
     }"
-    @click="$emit('select', row, col)"
+    @click="handleClick"
     @touchstart.passive="handleTouchStart"
-    @touchend.prevent="$emit('select', row, col)"
+    @touchend.prevent="handleTouchEnd"
     tabindex="0"
     @keydown="handleKeyDown"
     :aria-label="`Sudoku cell row ${row + 1}, column ${col + 1}${value ? ', value ' + value : ''}`"
@@ -101,8 +101,23 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'update']);
 
+// New click handler for better debugging
+function handleClick(event) {
+  console.log('🖱️ Cell clicked:', { row: props.row, col: props.col, value: props.value });
+  console.log('  Cell state:', { 
+    isSelected: props.isSelected, 
+    isMultiSelected: props.isMultiSelected,
+    isReadOnly: props.isReadOnly,
+    noteMode: props.isNoteModeActive
+  });
+  
+  emit('select', props.row, props.col);
+}
+
 // Handle touch events better on mobile
 function handleTouchStart(event) {
+  console.log('👆 Touch start on cell:', { row: props.row, col: props.col });
+  
   // Add visual feedback for touch start
   const target = event.currentTarget;
   target.style.opacity = '0.7';
@@ -113,28 +128,61 @@ function handleTouchStart(event) {
   }, 300);
 }
 
+// Add touch end handler for debugging
+function handleTouchEnd(event) {
+  console.log('👆 Touch end on cell:', { row: props.row, col: props.col });
+  emit('select', props.row, props.col);
+}
+
 // Handle keyboard events for PC users
 function handleKeyDown(event) {
+  console.log('⌨️ Keyboard event on cell:', { 
+    row: props.row, 
+    col: props.col, 
+    key: event.key, 
+    code: event.code,
+    isNoteModeActive: props.isNoteModeActive
+  });
+  
   // Skip if the cell is read-only
-  if (props.isReadOnly) return;
+  if (props.isReadOnly) {
+    console.log('  Cell is read-only, ignoring keyboard input');
+    return;
+  }
+  
+  // Check if this is a numpad key (needs special handling)
+  const isNumpad = event.code && event.code.startsWith('Numpad');
+  const keyNum = parseInt(event.key);
+  
+  console.log('  Parsed key info:', { isNumpad, keyNum });
   
   // Handle number keys (both top row and numpad)
-  const keyNum = parseInt(event.key);
-  const isNumpad = event.code && event.code.startsWith('Numpad');
-  
   if (!isNaN(keyNum) && keyNum >= 0 && keyNum <= 9) {
+    // Always prevent default for number keys to avoid double input
     event.preventDefault();
+    
+    // For numpad keys, also stop propagation to prevent the global handler from processing it
+    if (isNumpad) {
+      console.log('  Stopping propagation for numpad key to prevent double handling');
+      event.stopPropagation();
+    }
+    
     if (keyNum === 0) {
       // 0 or Delete will clear the cell
+      console.log('  Emitting clear cell (0)');
       emit('update', 0);
     } else {
-      // 1-9 will set the value (pass note mode information along)
+      // 1-9 will set the value
+      console.log(`  Emitting update with value ${keyNum}`);
       emit('update', keyNum);
     }
   } else if (event.key === 'Delete' || event.key === 'Backspace') {
     // Delete or Backspace will clear the cell
     event.preventDefault();
+    console.log('  Emitting clear cell (Delete/Backspace)');
     emit('update', 0);
+  } else {
+    console.log('  No action taken for this key');
   }
 }
 </script>
