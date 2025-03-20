@@ -241,7 +241,7 @@
     <!-- Footer -->
     <footer class="bg-gray-50 py-6 mt-12">
       <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
-        <p>© 2023 Sudoku 1vs1 • Made with ❤️ for puzzle enthusiasts</p>
+        <p>Made with ❤️ for puzzle enthusiasts</p>
       </div>
     </footer>
   </div>
