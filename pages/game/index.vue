@@ -1,78 +1,116 @@
 <template>
   <div>
-    <div v-if="!gameStarted" class="bg-gradient-to-b from-blue-50 to-gray-100 min-h-screen">
-      <div class="container mx-auto px-4 py-8">
-        <div class="max-w-md mx-auto">
-          <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">Sudoku 1vs1</h1>
-          
-          <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold mb-4 text-gray-700">Game Options</h2>
-            
-            <div class="space-y-4">
-              <button 
-                class="w-full py-3 px-6 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition transform hover:scale-105 flex items-center justify-center"
-                @click="startSinglePlayerGame"
-              >
-                <span class="mr-2">🎮</span> Practice Mode
-              </button>
-              
-              <button 
-                class="w-full py-3 px-6 bg-green-500 text-white rounded-md hover:bg-green-600 transition transform hover:scale-105 flex items-center justify-center"
-                @click="createGame"
-              >
-                <span class="mr-2">🏆</span> Create Game Room
-              </button>
-              
-              <div class="flex flex-col sm:flex-row w-full space-y-2 sm:space-y-0 sm:space-x-2">
-                <input 
-                  v-model="gameCode" 
-                  class="w-full sm:flex-1 py-3 px-4 border border-gray-300 rounded-md sm:rounded-l-md sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" 
-                  placeholder="Enter Game Code"
-                />
-                <button 
-                  class="w-full sm:w-auto py-3 px-6 bg-purple-500 text-white rounded-md sm:rounded-l-none sm:rounded-r-md hover:bg-purple-600 transition"
-                  @click="joinGame"
-                >
-                  Join
-                </button>
+    <div v-if="!gameStarted" class="bg-gradient-to-b from-indigo-100 to-purple-50 min-h-screen flex items-center justify-center">
+      <div class="container max-w-md mx-auto px-4 py-8">
+        <div class="text-center mb-8">
+          <div class="inline-block mb-4 animate-bounce-gentle">
+            <div class="bg-white p-3 rounded-2xl shadow-xl transform rotate-3 transition-transform hover:rotate-0">
+              <div class="grid grid-cols-3 gap-0.5 w-20 h-20">
+                <div v-for="i in 9" :key="i" 
+                  class="flex items-center justify-center text-white font-bold rounded-sm"
+                  :class="i % 2 === 0 ? 'bg-indigo-600' : 'bg-purple-600'">
+                  {{ i % 9 + 1 }}
+                </div>
               </div>
             </div>
           </div>
+          <h1 class="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Sudoku 1vs1</h1>
+          <p class="text-gray-600">Challenge friends and prove your puzzle skills!</p>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-6 transform transition-all hover:scale-105">
+          <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Game Options</h2>
           
-          <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-            <p class="text-sm text-blue-800">
-              Challenge your friends to a Sudoku duel! Create a game room and share the code, or join an existing game with a code.
-            </p>
+          <div class="space-y-5">
+            <button 
+              class="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition transform hover:translate-y-[-2px] flex items-center justify-center font-medium"
+              @click="startSinglePlayerGame"
+            >
+              <span class="mr-2 text-xl">🎮</span> Practice Mode
+            </button>
+            
+            <button 
+              class="w-full py-4 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:shadow-lg transition transform hover:translate-y-[-2px] flex items-center justify-center font-medium"
+              @click="createGame"
+            >
+              <span class="mr-2 text-xl">🏆</span> Create Game Room
+            </button>
+            
+            <div class="relative mt-8">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-gray-200"></div>
+              </div>
+              <div class="relative flex justify-center text-sm">
+                <span class="px-2 bg-white text-gray-500">or join with code</span>
+              </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row w-full space-y-3 sm:space-y-0 sm:space-x-2 mt-6">
+              <div class="relative flex-grow">
+                <input 
+                  v-model="gameCode" 
+                  class="w-full py-4 px-5 border border-gray-300 rounded-xl sm:rounded-r-none focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent shadow-sm" 
+                  placeholder="Enter Game Code"
+                />
+              </div>
+              <button 
+                class="py-4 px-8 bg-gradient-to-r from-purple-500 to-purple-700 text-white rounded-xl sm:rounded-l-none hover:shadow-lg transition transform hover:translate-y-[-2px]"
+                @click="joinGame"
+              >
+                Join
+              </button>
+            </div>
           </div>
+        </div>
+        
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-5 border border-indigo-100 shadow-sm">
+          <p class="text-sm text-indigo-800 font-medium">
+            <span class="block text-lg font-bold mb-1">👋 Invite Friends!</span>
+            Create a game room and share the code, or join an existing game with a code.
+          </p>
         </div>
       </div>
     </div>
     
     <GameLayout v-else :is-multiplayer="isMultiplayer">
-      <div class="p-2 sm:p-4 max-w-lg mx-auto">
-        <div v-if="isWaiting" class="game-notification warning mb-4">
-          <p><span class="font-semibold">Waiting for opponent to join...</span></p>
-          <p class="mt-1">Share this code: 
-            <span class="bg-white px-2 py-0.5 rounded font-mono text-sm">{{ gameId }}</span>
+      <div class="p-4 sm:p-6 max-w-lg mx-auto">
+        <div v-if="isWaiting" class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-lg mb-5 animate-pulse">
+          <p class="text-amber-800 font-semibold">Waiting for opponent to join...</p>
+          <div class="mt-3 flex items-center">
+            <span class="text-gray-700 mr-2">Share this code:</span>
+            <span class="bg-white px-3 py-1.5 rounded-lg font-mono text-md border border-amber-200">{{ gameId }}</span>
             <button
               @click="copyGameId"
-              class="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 transition"
+              class="ml-2 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 transition font-medium text-sm"
             >
               Copy
             </button>
-          </p>
+          </div>
         </div>
 
-        <div v-if="isRejoining" class="game-notification info mb-4">
-          <p><span class="font-semibold">Welcome back!</span> You've rejoined your previous game.</p>
+        <div v-if="isRejoining" class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-5">
+          <p class="text-blue-800 font-medium">
+            <span class="font-bold">Welcome back!</span> You've rejoined your previous game.
+          </p>
         </div>
         
-        <div v-if="opponent" class="mb-4 grid grid-cols-2 gap-2">
-          <div class="error-counter player p-2 text-sm rounded-md bg-gray-50" :class="{ 'has-errors': errorCount > 0 }">
-            <span class="font-medium">You:</span> {{ errorCount }} {{ errorCount === 1 ? 'error' : 'errors' }}
-          </div>
-          <div class="error-counter opponent p-2 text-sm rounded-md bg-gray-50" :class="{ 'has-errors': opponentErrors > 0 }">
-            <span class="font-medium">{{ opponent.name }}:</span> {{ opponentErrors }} {{ opponentErrors === 1 ? 'error' : 'errors' }}
+        <div v-if="opponent" class="mb-5">
+          <h3 class="text-lg font-bold text-gray-700 mb-3">Game Stats</h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 p-4 rounded-xl shadow-sm" 
+                :class="{ 'from-red-50 to-red-100': errorCount > 0 }">
+              <p class="text-xs uppercase tracking-wide text-indigo-500 mb-1">Your Errors</p>
+              <p class="text-2xl font-bold" :class="errorCount > 0 ? 'text-red-600' : 'text-indigo-600'">
+                {{ errorCount }}
+              </p>
+            </div>
+            <div class="bg-gradient-to-r from-purple-50 to-purple-100 p-4 rounded-xl shadow-sm"
+                :class="{ 'from-red-50 to-red-100': opponentErrors > 0 }">
+              <p class="text-xs uppercase tracking-wide text-purple-500 mb-1">{{ opponent.name }}</p>
+              <p class="text-2xl font-bold" :class="opponentErrors > 0 ? 'text-red-600' : 'text-purple-600'">
+                {{ opponentErrors }}
+              </p>
+            </div>
           </div>
         </div>
         
@@ -205,7 +243,7 @@ const createGame = async () => {
     
     // Create a new game in the database
     const game = await pb.collection('Games').create({
-      player1: pb.authStore.model.id,
+      player1: pb.authStore.model?.id,
       player2: null,
       status: 'waiting',
       difficulty: sudoku.difficulty,
@@ -292,7 +330,7 @@ const joinGame = async () => {
     
     // Join the game
     await pb.collection('Games').update(game.id, {
-      player2: pb.authStore.model.id,
+      player2: pb.authStore.model?.id,
       status: 'in-progress',
     });
     
@@ -438,4 +476,32 @@ const copyGameId = () => {
     alert(`Your game ID is: ${gameId.value}`);
   }
 };
-</script> 
+</script>
+
+<style scoped>
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style> 
