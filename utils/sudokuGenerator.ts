@@ -36,9 +36,9 @@ function stringToBoard(boardString: string): number[][] {
  * @param difficulty Difficulty level ('easy', 'medium', 'hard', 'expert')
  * @returns An object containing the puzzle, solution, and difficulty
  */
-export function generateSudokuPuzzle(difficulty: string = 'medium'): SudokuGame {
+export function generateSudokuPuzzle(difficulty: string = 'hard'): SudokuGame {
   // Map our difficulty levels to sudoku-gen's difficulty levels
-  let mappedDifficulty: 'easy' | 'medium' | 'hard' | 'expert' = 'medium';
+  let mappedDifficulty: 'easy' | 'medium' | 'hard' | 'expert' = 'hard';
   
   // Convert our difficulty to sudoku-gen's difficulty
   switch (difficulty.toLowerCase()) {
@@ -57,7 +57,7 @@ export function generateSudokuPuzzle(difficulty: string = 'medium'): SudokuGame 
       mappedDifficulty = 'expert';
       break;
     default:
-      mappedDifficulty = 'medium';
+      mappedDifficulty = 'hard';
   }
   
   // Generate a puzzle using sudoku-gen

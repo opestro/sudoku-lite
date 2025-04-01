@@ -1,8 +1,23 @@
 <template>
   <div class="w-full max-w-md mx-auto relative">
     <NumberCounter :board="board" />
-    <div class="flex justify-between mb-2 p-2 bg-gray-50 rounded-t-md">
-      <div class="text-xs sm:text-sm font-medium">Difficulty: <span class="text-blue-600 font-semibold">{{ capitalizeFirst(difficulty) }}</span></div>
+    <div class="flex justify-between mb-2 p-2 bg-gray-50 rounded-t-md shadow-sm">
+      <div class="text-xs sm:text-sm font-medium">
+        Difficulty: 
+        <span 
+          :class="[
+            'font-bold px-2 py-0.5 rounded',
+            difficulty === 'hard' ? 'bg-red-100 text-red-600' : 
+            difficulty === 'expert' ? 'bg-purple-100 text-purple-600' : 
+            difficulty === 'medium' ? 'bg-blue-100 text-blue-600' : 
+            'bg-green-100 text-green-600'
+          ]"
+        >
+          {{ capitalizeFirst(difficulty) }}
+          <span v-if="difficulty === 'hard'" class="ml-1">🔥</span>
+          <span v-if="difficulty === 'expert'" class="ml-1">⚡</span>
+        </span>
+      </div>
       <div v-if="errorCount > 0" class="text-xs sm:text-sm text-red-500 font-medium">Errors: {{ errorCount }}</div>
     </div>
     
