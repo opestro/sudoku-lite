@@ -23,6 +23,51 @@
         <div class="bg-white rounded-2xl p-8 mb-6 ">
           <h2 class="text-2xl font-bold mb-6 text-gray-800 text-center">Game Options</h2>
 
+          <div class="mb-6">
+            <p class="text-gray-700 font-medium mb-2">Difficulty Level:</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <label class="flex flex-col p-3 border rounded-lg cursor-pointer transition-all h-full" 
+                :class="selectedDifficulty === 'easy' ? 'bg-green-50 border-green-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-green-50'">
+                <div class="flex items-center mb-1">
+                  <input type="radio" v-model="selectedDifficulty" value="easy" class="mr-2">
+                  <span class="font-medium text-green-600">Easy</span>
+                  <span class="ml-auto text-green-500">🍃</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Perfect for beginners with many clues given.</p>
+              </label>
+              
+              <label class="flex flex-col p-3 border rounded-lg cursor-pointer transition-all h-full" 
+                :class="selectedDifficulty === 'medium' ? 'bg-blue-50 border-blue-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-blue-50'">
+                <div class="flex items-center mb-1">
+                  <input type="radio" v-model="selectedDifficulty" value="medium" class="mr-2">
+                  <span class="font-medium text-blue-600">Medium</span>
+                  <span class="ml-auto text-blue-500">💧</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Balanced challenge requiring some strategy.</p>
+              </label>
+              
+              <label class="flex flex-col p-3 border rounded-lg cursor-pointer transition-all h-full" 
+                :class="selectedDifficulty === 'hard' ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-red-50'">
+                <div class="flex items-center mb-1">
+                  <input type="radio" v-model="selectedDifficulty" value="hard" class="mr-2">
+                  <span class="font-medium text-red-600">Hard</span>
+                  <span class="ml-auto text-red-500">🔥</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Advanced tactics required with fewer starting clues.</p>
+              </label>
+              
+              <label class="flex flex-col p-3 border rounded-lg cursor-pointer transition-all h-full" 
+                :class="selectedDifficulty === 'expert' ? 'bg-purple-50 border-purple-300 shadow-sm' : 'bg-white border-gray-200 hover:bg-purple-50'">
+                <div class="flex items-center mb-1">
+                  <input type="radio" v-model="selectedDifficulty" value="expert" class="mr-2">
+                  <span class="font-medium text-purple-600">Expert</span>
+                  <span class="ml-auto text-purple-500">⚡</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">For Sudoku masters. Complex solving patterns needed.</p>
+              </label>
+            </div>
+          </div>
+
           <div class="space-y-5">
             <button
               class="w-full py-4 px-6 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition transform hover:translate-y-[-2px] flex items-center justify-center font-medium"
@@ -109,6 +154,43 @@
           </div>
         </div>
 
+        <!-- Difficulty Information Banner -->
+        <div class="mb-4 p-3 rounded-lg text-sm" 
+          :class="{
+            'bg-green-50 border border-green-200': difficulty === 'easy',
+            'bg-blue-50 border border-blue-200': difficulty === 'medium',
+            'bg-red-50 border border-red-200': difficulty === 'hard',
+            'bg-purple-50 border border-purple-200': difficulty === 'expert'
+          }">
+          <div class="flex items-center">
+            <span class="font-medium mr-2" 
+              :class="{
+                'text-green-600': difficulty === 'easy',
+                'text-blue-600': difficulty === 'medium',
+                'text-red-600': difficulty === 'hard',
+                'text-purple-600': difficulty === 'expert'
+              }">
+              {{ difficulty.charAt(0).toUpperCase() + difficulty.slice(1) }} Difficulty
+            </span>
+            <span class="ml-auto">
+              {{ 
+                difficulty === 'easy' ? '🍃' : 
+                difficulty === 'medium' ? '💧' : 
+                difficulty === 'hard' ? '🔥' : 
+                '⚡' 
+              }}
+            </span>
+          </div>
+          <p class="text-xs text-gray-600 mt-1">
+            {{ 
+              difficulty === 'easy' ? 'Perfect for beginners with many clues given.' : 
+              difficulty === 'medium' ? 'Balanced challenge requiring some strategy.' : 
+              difficulty === 'hard' ? 'Advanced tactics required with fewer starting clues.' : 
+              'For Sudoku masters. Complex solving patterns needed.' 
+            }}
+          </p>
+        </div>
+
         <SudokuBoard :initial-puzzle="puzzle" :solution="solution" :difficulty="difficulty"
           :is-multiplayer="isMultiplayer" :game-id="gameId" @error="onError" @complete="onComplete"
           @opponent-errors="onOpponentErrors" />
@@ -137,6 +219,7 @@ const gameCode = ref('');
 const puzzle = ref<number[][]>([]);
 const solution = ref<number[][]>([]);
 const difficulty = ref('hard');
+const selectedDifficulty = ref('hard'); // Default selected difficulty
 const errorCount = ref(0);
 const opponent = ref<null | { id: string; name: string; avatar: string | null; gamesPlayed?: number; gamesWon?: number; rating?: number; }>({
   id: '',
@@ -226,8 +309,8 @@ const createGame = async () => {
   }
 
   try {
-    // Generate a puzzle using the improved generator with hard difficulty
-    const sudoku = generateSudokuPuzzle('hard');
+    // Generate a puzzle using the selected difficulty
+    const sudoku = generateSudokuPuzzle(selectedDifficulty.value);
 
     // Create a new game in the database
     const game = await pb.collection('Games').create({
@@ -285,8 +368,8 @@ const pollForOpponent = () => {
 // Start a single player game
 const startSinglePlayerGame = () => {
   isMultiplayer.value = false;
-  // Use the improved generator for a better puzzle experience
-  const sudoku = generateSudokuPuzzle('hard');
+  // Use the improved generator with the selected difficulty
+  const sudoku = generateSudokuPuzzle(selectedDifficulty.value);
   puzzle.value = sudoku.puzzle;
   solution.value = sudoku.solution;
   difficulty.value = sudoku.difficulty;
