@@ -136,7 +136,7 @@ const gameId = ref('');
 const gameCode = ref('');
 const puzzle = ref<number[][]>([]);
 const solution = ref<number[][]>([]);
-const difficulty = ref('medium');
+const difficulty = ref('hard');
 const errorCount = ref(0);
 const opponent = ref<null | { id: string; name: string; avatar: string | null; gamesPlayed?: number; gamesWon?: number; rating?: number; }>({
   id: '',
@@ -226,8 +226,8 @@ const createGame = async () => {
   }
 
   try {
-    // Generate a puzzle using the improved generator
-    const sudoku = generateSudokuPuzzle('medium');
+    // Generate a puzzle using the improved generator with hard difficulty
+    const sudoku = generateSudokuPuzzle('hard');
 
     // Create a new game in the database
     const game = await pb.collection('Games').create({
@@ -286,7 +286,7 @@ const pollForOpponent = () => {
 const startSinglePlayerGame = () => {
   isMultiplayer.value = false;
   // Use the improved generator for a better puzzle experience
-  const sudoku = generateSudokuPuzzle('easy'); // Easier puzzle for practice
+  const sudoku = generateSudokuPuzzle('hard');
   puzzle.value = sudoku.puzzle;
   solution.value = sudoku.solution;
   difficulty.value = sudoku.difficulty;
